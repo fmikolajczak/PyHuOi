@@ -1,0 +1,10 @@
+# temporary file and binary
+__pycache__
+*~
+
+# ide files
+.idea
+venv
+
+# confguration files for tests
+olt_parameters.json
