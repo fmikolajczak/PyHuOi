@@ -14,6 +14,8 @@ def read_olt_parameters() -> dict:
 
 
 def test_read_olt_parameters():
+    """Checking if there are devices to test on."""
+
     olt_parameters = read_olt_parameters()
     assert len(olt_parameters) > 0
     for name, param in olt_parameters.items():
@@ -23,8 +25,21 @@ def test_read_olt_parameters():
         assert param['password']
 
 
-@pytest.mark.skip('its not working anyway')
-def test_get_version():
-    olt = Olt()
+@pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters().items())
+def test_get_version(olt_name, olt_params):
+    expected_keys = ('version', 'patch', 'product', 'uptime')
+    #print(f'olt: {olt_name}, params: {olt_params}')
+    olt = Olt(ip=olt_params['ip'],
+              username=olt_params['username'],
+              password=olt_params['password'])
     version = olt.get_version()
-    assert version.version
+
+    # returned dict should be at minimum 7 element count
+    # TODO: verificate
+    assert len(version) > 7
+    for key in expected_keys:
+        assert key in version
+    assert 'day' in version['uptime']
+    assert 'hour' in version['uptime']
+    assert 'second' in version['uptime']
+
