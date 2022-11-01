@@ -28,18 +28,16 @@ def test_read_olt_parameters():
 @pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters().items())
 def test_get_version(olt_name, olt_params):
     expected_keys = ('version', 'patch', 'product', 'uptime')
-    #print(f'olt: {olt_name}, params: {olt_params}')
     olt = Olt(ip=olt_params['ip'],
               username=olt_params['username'],
               password=olt_params['password'])
     version = olt.get_version()
 
     # returned dict should be at minimum 7 element count
-    # TODO: verificate
+    # TODO: check how many elements are found in OLTs in the wild
     assert len(version) > 7
     for key in expected_keys:
         assert key in version
     assert 'day' in version['uptime']
     assert 'hour' in version['uptime']
     assert 'second' in version['uptime']
-

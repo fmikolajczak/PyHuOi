@@ -1,6 +1,7 @@
 from netmiko import ConnectHandler
 import re
 
+
 class Olt:
     connection: ConnectHandler = None
 
@@ -22,8 +23,8 @@ class Olt:
 
     def get_version(self) -> dict:
         cmd = 'display version'
-        version_pattern = '\s+([A-Za-z ]+[A-Za-z]+?)\s+:\s+([A-Za-z0-9 -]+?)\s*$'
-        uptime_pattern = 'Uptime is\s([^\n]+)'
+        version_pattern = r'\s+([A-Za-z ]+[A-Za-z]+?)\s+:\s+([A-Za-z0-9 -]+?)\s*$'
+        uptime_pattern = r'Uptime is\s([^\n]+)'
         conn = self.get_connection()
         output = conn.send_command('display version')
         version_dict = {}
