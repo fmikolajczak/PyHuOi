@@ -1,16 +1,29 @@
 import json
+import string
 from os import path
 
-from pyhuoi.olt import Olt
+from pyhuoi.olt import Olt, OltConfigMode
 import pytest
 
 PWD = path.dirname(path.realpath(__file__))
 
 
-def read_olt_parameters() -> dict:
+def read_olt_parameters(write=False) -> dict:
+    """Get list of OLTs to test on.
+
+    :param write: If True gets only OLTs which can write configuration on.
+    """
     with open(PWD + '/olt_parameters.json', 'r') as f:
         json_text = f.read()
-        return json.loads(json_text)
+        olt_dict = json.loads(json_text)
+        if write:
+            do_not_write_list = []
+            for key, params in d.items():
+                if not params.get('write') or not int(params.get('write')):
+                    do_not_write_list.append(key)
+            for key in do_not_write_list:
+                olt_dict.pop(key)
+        return olt_dict
 
 
 def test_read_olt_parameters():
@@ -41,3 +54,77 @@ def test_get_version(olt_name, olt_params):
     assert 'day' in version['uptime']
     assert 'hour' in version['uptime']
     assert 'second' in version['uptime']
+
+
+@pytest.mark.xfail
+@pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters().items())
+def test_get_onu_list(olt_name, olt_params):
+    allowed_sn_chars = set('ABCDEF' + string.digits)
+    olt = Olt(ip=olt_params['ip'],
+              username=olt_params['username'],
+              password=olt_params['password'])
+    onu_list = olt.get_onu_list()
+    assert onu_list is not None
+    for sn, onu in onu_list:
+        assert type(onu) == dict
+        # len of sn have to be 16 and contain only chars A-F and digits
+        assert len(sn) == 16
+        assert set(onu.get('sn')) <= allowed_sn_chars
+        assert type(onu.get('frame')) == int
+        assert type(onu.get('board')) == int
+        assert type(onu.get('port')) == int
+        assert type(onu.get('onuid')) == int
+
+
+@pytest.mark.xfail
+def test_get_port_onu_config():
+    assert False
+
+
+@pytest.mark.xfail
+def test_get_onu_config_by_sn():
+    assert False
+
+
+@pytest.mark.xfail
+def test_get_onu_config_by_fbp():
+    assert False
+
+
+@pytest.mark.xfail
+def test_get_port_onu_list():
+    assert False
+
+@pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters().items())
+def test_configuration_modes(olt_name, olt_params):
+    olt = Olt(ip=olt_params['ip'],
+              username=olt_params['username'],
+              password=olt_params['password'],
+              session_log = 'netmiko_session.log')
+
+    olt.get_connection()
+
+    current_mode = olt.get_config_mode()
+    assert current_mode == OltConfigMode.USER
+
+    olt.set_config_mode(OltConfigMode.ENABLE)
+    current_mode = olt.get_config_mode()
+    assert current_mode == OltConfigMode.ENABLE
+
+    olt.set_config_mode(OltConfigMode.CONFIG)
+    current_mode = olt.get_config_mode()
+    assert current_mode == OltConfigMode.CONFIG
+
+    olt.set_config_mode(OltConfigMode.USER)
+    current_mode = olt.get_config_mode()
+    assert current_mode == OltConfigMode.USER
+
+@pytest.mark.xfail
+@pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters().items())
+def test_interface_mode(olt_name, olt_params):
+    # olt.set_interface_mode(olt_params['gpon_interface'])
+    # current_mode = olt.get_config_mode()
+    # current_mode_interface = olt.get_config_mode_interface()
+    # assert current_mode == OltConfigMode.INTERFACE
+    # assert current_mode_interface == olt_params['gpon_interface']
+    assert False

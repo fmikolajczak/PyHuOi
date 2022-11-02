@@ -8,3 +8,6 @@ venv
 
 # confguration files for tests
 olt_parameters.json
+
+# log files
+*.log
