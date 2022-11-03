@@ -99,8 +99,7 @@ def test_get_port_onu_list():
 def test_configuration_modes(olt_name, olt_params):
     olt = Olt(ip=olt_params['ip'],
               username=olt_params['username'],
-              password=olt_params['password'],
-              session_log = 'netmiko_session.log')
+              password=olt_params['password'])
 
     olt.get_connection()
 

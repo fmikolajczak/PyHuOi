@@ -15,7 +15,7 @@ class Olt:
     connection: ConnectHandler = None
     config_mode: OltConfigMode = None
 
-    def __init__(self, ip: str = '', username: str = '', password: str = '', session_log: str = '') -> None:
+    def __init__(self, ip: str = '', username: str = '', password: str = '', session_log: str = None) -> None:
         self.ip = ip
         self.username = username
         self.password = password
@@ -39,6 +39,8 @@ class Olt:
         valid_modes = (OltConfigMode.USER,
                        OltConfigMode.ENABLE,
                        OltConfigMode.CONFIG)
+        if self.get_config_mode() not in valid_modes:
+            self.set_config_mode(OltConfigMode.CONFIG)
         version_pattern = r'\s+([A-Za-z ]+[A-Za-z]+?)\s+:\s+([A-Za-z0-9 -]+?)\s*$'
         uptime_pattern = r'Uptime is\s([^\n]+)'
         conn = self.get_connection()
