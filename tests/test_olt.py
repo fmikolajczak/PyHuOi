@@ -57,6 +57,7 @@ def test_get_version(olt_name, olt_params):
               password=olt_params['password'])
     version = olt.get_version()
     assert_version(version)
+    olt.disconnect()
 
 
 @pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters().items())
@@ -77,7 +78,7 @@ def test_get_onu_list(olt_name, olt_params):
         assert type(onu.get('board')) == int
         assert type(onu.get('port')) == int
         assert type(onu.get('onuid')) == int
-
+    olt.disconnect()
 
 @pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters().items())
 def test_get_version_from_interface_mode(olt_name, olt_params):
@@ -88,6 +89,7 @@ def test_get_version_from_interface_mode(olt_name, olt_params):
     olt.set_interface_mode(olt_params['gpon_interface'])
     version = olt.get_version()
     assert_version(version)
+    olt.disconnect()
 
 
 @pytest.mark.xfail
@@ -132,6 +134,7 @@ def test_configuration_modes(olt_name, olt_params):
     olt.set_config_mode(OltConfigMode.USER)
     current_mode = olt.get_config_mode()
     assert current_mode == OltConfigMode.USER
+    olt.disconnect()
 
 
 @pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters().items())
@@ -148,3 +151,10 @@ def test_interface_mode(olt_name, olt_params):
     current_mode_interface = olt.get_interface_mode_interface()
     assert current_mode == OltConfigMode.INTERFACE
     assert current_mode_interface == olt_params['gpon_interface']
+    olt.disconnect()
+
+
+@pytest.mark.xfail
+@pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters().items())
+def test_login_after_login(olt_name, olt_params):
+    return None

@@ -127,3 +127,7 @@ class Olt:
 
     def get_interface_mode_interface(self):
         return self.interface_mode_interface
+
+    def disconnect(self) -> None:
+        if self.connection:
+            self.connection.disconnect()
