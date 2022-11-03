@@ -56,13 +56,13 @@ def test_get_version(olt_name, olt_params):
     assert 'second' in version['uptime']
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters().items())
 def test_get_onu_list(olt_name, olt_params):
     allowed_sn_chars = set('ABCDEF' + string.digits)
     olt = Olt(ip=olt_params['ip'],
               username=olt_params['username'],
-              password=olt_params['password'])
+              password=olt_params['password'],
+              session_log='test_get_onu_list.log')
     onu_list = olt.get_onu_list()
     assert onu_list is not None
     for sn, onu in onu_list:
@@ -94,6 +94,7 @@ def test_get_onu_config_by_fbp():
 @pytest.mark.xfail
 def test_get_port_onu_list():
     assert False
+
 
 @pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters().items())
 def test_configuration_modes(olt_name, olt_params):

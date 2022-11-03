@@ -14,12 +14,18 @@ class OltConfigMode(Enum):
 class Olt:
     connection: ConnectHandler = None
     config_mode: OltConfigMode = None
+    ip: str = None
+    username: str = None
+    password: str = None
 
     def __init__(self, ip: str = '', username: str = '', password: str = '', session_log: str = None) -> None:
         self.ip = ip
         self.username = username
         self.password = password
         self.session_log = session_log
+
+    def __repr__(self):
+        return f'OLT ip {self.ip}'
 
     def _init_connection(self):
         self.connection = ConnectHandler(device_type='huawei_olt',
@@ -53,8 +59,18 @@ class Olt:
         return version_dict
 
     def get_onu_list(self):
+        cmd = 'display ont info 0 all'
+        ont_info_pattern = r'([0-9]+)\/ ([0-9]+)\/([0-9]+)\s+([0-9]+)  {}\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)'
+        self.set_config_mode(OltConfigMode.ENABLE)
         conn = self.get_connection()
-        output = conn.send_command('display onu info 0 all')
+        try:
+            output = conn.send_command(cmd)
+        except Exception as e:
+            print(f'Exception: {e} on \nolt: {self}')
+            return None
+
+        olt_list_match = re.findall(ont_info_pattern, output)
+        return {k: v for k, *v in olt_list_match}
 
     def get_config_mode(self) -> OltConfigMode:
         return self.config_mode
