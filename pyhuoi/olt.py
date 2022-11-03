@@ -17,6 +17,7 @@ class Olt:
     ip: str = None
     username: str = None
     password: str = None
+    interface_mode_interface: str = None
 
     def __init__(self, ip: str = '', username: str = '', password: str = '', session_log: str = None) -> None:
         self.ip = ip
@@ -113,5 +114,16 @@ class Olt:
         prompt = conn.find_prompt()
         return prompt
 
-    def set_config_interface(self, interface: str):
-        raise NotImplementedError('Not implemented Yet!')
+    def set_interface_mode(self, interface: str):
+        if self.get_config_mode() is not OltConfigMode.CONFIG:
+            self.set_config_mode(OltConfigMode.CONFIG)
+
+        conn = self.get_connection()
+        expected_prompt = f'(config-if-{interface.replace(" ","-")})#'
+        conn.send_command(f'interface {interface}', expect_string='#')
+        self.config_mode = OltConfigMode.INTERFACE
+        self.interface_mode_interface = interface
+        return conn.find_prompt()
+
+    def get_interface_mode_interface(self):
+        return self.interface_mode_interface

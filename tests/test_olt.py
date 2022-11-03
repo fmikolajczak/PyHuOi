@@ -38,14 +38,8 @@ def test_read_olt_parameters():
         assert param['password']
 
 
-@pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters().items())
-def test_get_version(olt_name, olt_params):
+def assert_version(version: str):
     expected_keys = ('version', 'patch', 'product', 'uptime')
-    olt = Olt(ip=olt_params['ip'],
-              username=olt_params['username'],
-              password=olt_params['password'])
-    version = olt.get_version()
-
     # returned dict should be at minimum 7 element count
     # TODO: check how many elements are found in OLTs in the wild
     assert len(version) > 7
@@ -54,6 +48,14 @@ def test_get_version(olt_name, olt_params):
     assert 'day' in version['uptime']
     assert 'hour' in version['uptime']
     assert 'second' in version['uptime']
+
+@pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters().items())
+def test_get_version(olt_name, olt_params):
+    olt = Olt(ip=olt_params['ip'],
+              username=olt_params['username'],
+              password=olt_params['password'])
+    version = olt.get_version()
+    assert_version(version)
 
 
 @pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters().items())
@@ -75,6 +77,15 @@ def test_get_onu_list(olt_name, olt_params):
         assert type(onu.get('port')) == int
         assert type(onu.get('onuid')) == int
 
+
+@pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters().items())
+def test_get_version_from_interface_mode(olt_name, olt_params):
+    olt = Olt(ip=olt_params['ip'],
+              username=olt_params['username'],
+              password=olt_params['password'])
+    olt.set_interface_mode(olt_params['gpon_interface'])
+    version = olt.get_version()
+    assert_version(version)
 
 @pytest.mark.xfail
 def test_get_port_onu_config():
@@ -119,12 +130,18 @@ def test_configuration_modes(olt_name, olt_params):
     current_mode = olt.get_config_mode()
     assert current_mode == OltConfigMode.USER
 
-@pytest.mark.xfail
+
 @pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters().items())
 def test_interface_mode(olt_name, olt_params):
-    # olt.set_interface_mode(olt_params['gpon_interface'])
-    # current_mode = olt.get_config_mode()
-    # current_mode_interface = olt.get_config_mode_interface()
-    # assert current_mode == OltConfigMode.INTERFACE
-    # assert current_mode_interface == olt_params['gpon_interface']
-    assert False
+    olt = Olt(ip=olt_params['ip'],
+              username=olt_params['username'],
+              password=olt_params['password'],
+              session_log='test_inteface_mode.log')
+    olt.get_connection()
+
+    interface_mode_result = olt.set_interface_mode(olt_params['gpon_interface'])
+    assert 'config-if' in interface_mode_result
+    current_mode = olt.get_config_mode()
+    current_mode_interface = olt.get_interface_mode_interface()
+    assert current_mode == OltConfigMode.INTERFACE
+    assert current_mode_interface == olt_params['gpon_interface']
