@@ -1,6 +1,8 @@
 # temporary file and binary
 __pycache__
+*.pyc
 *~
+.coverage
 
 # ide files
 .idea
