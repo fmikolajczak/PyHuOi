@@ -65,7 +65,7 @@ class Olt:
         self.set_config_mode(OltConfigMode.ENABLE)
         conn = self.get_connection()
         try:
-            output = conn.send_command(cmd)
+            output = conn.send_command(cmd, read_timeout=90)
         except Exception as e:
             print(f'Exception: {e} on \nolt: {self}')
             return None

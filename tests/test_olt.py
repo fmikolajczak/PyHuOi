@@ -139,7 +139,7 @@ def test_interface_mode(olt_name, olt_params):
     olt = Olt(ip=olt_params['ip'],
               username=olt_params['username'],
               password=olt_params['password'],
-              session_log='test_inteface_mode.log')
+              session_log='test_interface_mode.log')
     olt.get_connection()
 
     interface_mode_result = olt.set_interface_mode(olt_params['gpon_interface'])
