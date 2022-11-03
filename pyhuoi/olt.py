@@ -97,7 +97,7 @@ class Olt:
                 self.config_mode = OltConfigMode.USER
                 return
             if mode == OltConfigMode.CONFIG:
-                conn.send_command('config', expect_string='\(config\)#')
+                conn.send_command('config', expect_string=r'\(config\)#')
                 self.config_mode = OltConfigMode.CONFIG
                 return
 
@@ -107,7 +107,7 @@ class Olt:
             return self.set_config_mode(mode)
 
         if self.config_mode == OltConfigMode.INTERFACE:
-            conn.send_command('quit', expect_string='(config)#')
+            conn.send_command('quit', expect_string=r'\(config\)#')
             self.config_mode = OltConfigMode.CONFIG
             return self.set_config_mode(mode)
 
@@ -119,8 +119,8 @@ class Olt:
             self.set_config_mode(OltConfigMode.CONFIG)
 
         conn = self.get_connection()
-        expected_prompt = f'(config-if-{interface.replace(" ","-")})#'
-        conn.send_command(f'interface {interface}', expect_string='#')
+        expected_prompt = f'\(config-if-{interface.replace(" ","-")}\)#'
+        conn.send_command(f'interface {interface}', expect_string=expected_prompt)
         self.config_mode = OltConfigMode.INTERFACE
         self.interface_mode_interface = interface
         return conn.find_prompt()

@@ -49,6 +49,7 @@ def assert_version(version: str):
     assert 'hour' in version['uptime']
     assert 'second' in version['uptime']
 
+
 @pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters().items())
 def test_get_version(olt_name, olt_params):
     olt = Olt(ip=olt_params['ip'],
@@ -82,10 +83,12 @@ def test_get_onu_list(olt_name, olt_params):
 def test_get_version_from_interface_mode(olt_name, olt_params):
     olt = Olt(ip=olt_params['ip'],
               username=olt_params['username'],
-              password=olt_params['password'])
+              password=olt_params['password'],
+              session_log='test_get_version_from_interface_mode.log')
     olt.set_interface_mode(olt_params['gpon_interface'])
     version = olt.get_version()
     assert_version(version)
+
 
 @pytest.mark.xfail
 def test_get_port_onu_config():
