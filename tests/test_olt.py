@@ -11,14 +11,14 @@ PWD = path.dirname(path.realpath(__file__))
 def read_olt_parameters(write=False) -> dict:
     """Get list of OLTs to test on.
 
-    :param write: If True gets only OLTs which can write configuration on.
+    :param: write: If True gets only OLTs which can write configuration on.
     """
     with open(PWD + '/olt_parameters.json', 'r') as f:
         json_text = f.read()
         olt_dict = json.loads(json_text)
         if write:
             do_not_write_list = []
-            for key, params in d.items():
+            for key, params in olt_dict.items():
                 if not params.get('write') or not int(params.get('write')):
                     do_not_write_list.append(key)
             for key in do_not_write_list:
@@ -38,7 +38,20 @@ def test_read_olt_parameters():
         assert param['password']
 
 
-def assert_version(version: str):
+def test_read_olt_parameters_write():
+    """Checking if there are devices to test on."""
+
+    olt_parameters = read_olt_parameters(write=True)
+    assert len(olt_parameters) > 0
+    for name, param in olt_parameters.items():
+        assert len(param) > 2
+        assert param['ip']
+        assert param['username']
+        assert param['password']
+        assert param['write'] == '1'
+
+
+def assert_version(version: dict):
     expected_keys = ('version', 'patch', 'product', 'uptime')
     # returned dict should be at minimum 7 element count
     # TODO: check how many elements are found in OLTs in the wild
@@ -60,25 +73,31 @@ def test_get_version(olt_name, olt_params):
     olt.disconnect()
 
 
+def assert_onu_list(onu_list):
+    allowed_sn_chars = set('ABCDEF' + string.digits)
+    assert onu_list is not None
+    assert len(onu_list) > 0
+    for sn, onu in onu_list.items():
+        assert type(onu) == dict
+        # len of sn have to be 16 and contain only chars A-F and digits
+        assert len(sn) == 16
+        assert set(sn) <= allowed_sn_chars
+        assert type(onu.get('frame')) == int
+        assert type(onu.get('board')) == int
+        assert type(onu.get('port')) == int
+        assert type(onu.get('onuid')) == int
+
+
 @pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters().items())
 def test_get_onu_list(olt_name, olt_params):
-    allowed_sn_chars = set('ABCDEF' + string.digits)
     olt = Olt(ip=olt_params['ip'],
               username=olt_params['username'],
               password=olt_params['password'],
               session_log='test_get_onu_list.log')
     onu_list = olt.get_onu_list()
-    assert onu_list is not None
-    for sn, onu in onu_list:
-        assert type(onu) == dict
-        # len of sn have to be 16 and contain only chars A-F and digits
-        assert len(sn) == 16
-        assert set(onu.get('sn')) <= allowed_sn_chars
-        assert type(onu.get('frame')) == int
-        assert type(onu.get('board')) == int
-        assert type(onu.get('port')) == int
-        assert type(onu.get('onuid')) == int
+    assert_onu_list(onu_list)
     olt.disconnect()
+
 
 @pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters().items())
 def test_get_version_from_interface_mode(olt_name, olt_params):
@@ -107,9 +126,42 @@ def test_get_onu_config_by_fbp():
     assert False
 
 
-@pytest.mark.xfail
-def test_get_port_onu_list():
-    assert False
+def test_get_onu_list_bad_parameters():
+    olt_name, olt_params = list(read_olt_parameters().items())[0]
+    olt = Olt(ip=olt_params['ip'],
+              username=olt_params['username'],
+              password=olt_params['password'])
+
+    with pytest.raises(ValueError):
+        olt.get_onu_list(port=0)
+    with pytest.raises(ValueError):
+        olt.get_onu_list(board=0)
+    with pytest.raises(ValueError):
+        olt.get_onu_list(port=0, board=0)
+
+
+@pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters().items())
+def test_get_onu_list_port(olt_name, olt_params):
+    olt = Olt(ip=olt_params['ip'],
+              username=olt_params['username'],
+              password=olt_params['password'],
+              session_log=f'test_get_onu_list_port_{olt_name}.log')
+    onu_list = olt.get_onu_list(frame=olt_params['onu_list_port'][0],
+                                board=olt_params['onu_list_port'][1],
+                                port=olt_params['onu_list_port'][2])
+    olt.disconnect()
+    assert_onu_list(onu_list)
+
+
+@pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters().items())
+def test_get_onu_list_board(olt_name, olt_params):
+    olt = Olt(ip=olt_params['ip'],
+              username=olt_params['username'],
+              password=olt_params['password'])
+    onu_list = olt.get_onu_list(frame=olt_params['onu_list_port'][0],
+                                board=olt_params['onu_list_port'][1])
+    olt.disconnect()
+    assert_onu_list(onu_list)
 
 
 @pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters().items())

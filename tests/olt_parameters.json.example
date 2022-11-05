@@ -4,13 +4,15 @@
     "username":"user",
     "password":"pass",
     "write":"1",
-    "gpon_interface": "gpon 0/12"
+    "gpon_interface": "gpon 0/12",
+    "onu_list_port": ["0", "12", "0"]
   },
     "olt2": {
     "ip":"10.2.3.4",
     "username":"user2",
     "password":"pass2",
     "write":"0",
-    "gpon_interface": "gpon 0/1"
+    "gpon_interface": "gpon 0/1",
+    "onu_list_port": ["0", "1", "0"]
   }
 }

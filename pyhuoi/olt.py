@@ -59,25 +59,33 @@ class Olt:
         version_dict['uptime'] = uptime
         return version_dict
 
-    def get_onu_list(self):
-        cmd = 'display ont info 0 all'
-        ont_info_pattern = r'([0-9]+)\/ ([0-9]+)\/([0-9]+)\s+([0-9]+)  {}\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)'
+    def get_onu_list(self, frame: int = None, board: int = None, port: int = None):
+
+        if port is not None and (frame is None or board is None) or \
+                board is not None and frame is None:
+            raise ValueError('Please pass frame with board or/and port')
+
+        cmd = f'display ont info {frame or "0"} {board or ""} {port or ""} all'
+        cmd = re.sub(' +', ' ', cmd)
+        #ont_info_pattern = r'([0-9]+)\/ ([0-9]+)\/([0-9]+)\s+([0-9]+)  ([A-F0-9]+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)'
+        ont_info_pattern = r'([0-9]+)\/\s*([0-9]+)\/([0-9]+)\s+([0-9]+)  ([A-F0-9]+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)'
         self.set_config_mode(OltConfigMode.ENABLE)
         conn = self.get_connection()
         try:
-            output = conn.send_command(cmd, read_timeout=90)
+            output = conn.send_command(cmd, read_timeout=90, expect_string="#")
         except Exception as e:
             print(f'Exception: {e} on \nolt: {self}')
             return None
 
         olt_list_match = re.findall(ont_info_pattern, output)
-        return {k: v for k, *v in olt_list_match}
+        return {onusn: {'frame': int(frame), 'board': int(board), 'port': int(port), 'onuid': int(onuid), 'control': control,
+                        'run': run, 'config': config, 'match': match, 'protect': protect}
+                for frame, board, port, onuid, onusn, control, run, config, match, protect in olt_list_match}
 
     def get_config_mode(self) -> OltConfigMode:
         return self.config_mode
 
     def set_config_mode(self, mode: OltConfigMode) -> None:
-        # can set configmode: USER, ENABLE, CONFIG (not INTERFACE)
         if mode == OltConfigMode.INTERFACE:
             raise ValueError('Cannot go to interface mode without knowing interface name!')
 
@@ -111,15 +119,12 @@ class Olt:
             self.config_mode = OltConfigMode.CONFIG
             return self.set_config_mode(mode)
 
-        prompt = conn.find_prompt()
-        return prompt
-
     def set_interface_mode(self, interface: str):
         if self.get_config_mode() is not OltConfigMode.CONFIG:
             self.set_config_mode(OltConfigMode.CONFIG)
 
         conn = self.get_connection()
-        expected_prompt = f'\(config-if-{interface.replace(" ","-")}\)#'
+        expected_prompt = rf'\(config-if-{interface.replace(" ","-")}\)#'
         conn.send_command(f'interface {interface}', expect_string=expected_prompt)
         self.config_mode = OltConfigMode.INTERFACE
         self.interface_mode_interface = interface
