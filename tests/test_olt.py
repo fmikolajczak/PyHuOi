@@ -105,7 +105,7 @@ def test_get_version_from_interface_mode(olt_name, olt_params):
               username=olt_params['username'],
               password=olt_params['password'],
               session_log='test_get_version_from_interface_mode.log')
-    olt.set_interface_mode(olt_params['gpon_interface'])
+    olt.set_interface_mode(*olt_params['gpon_interface'])
     version = olt.get_version()
     assert_version(version)
     olt.disconnect()
@@ -197,12 +197,12 @@ def test_interface_mode(olt_name, olt_params):
               session_log='test_interface_mode.log')
     olt.get_connection()
 
-    interface_mode_result = olt.set_interface_mode(olt_params['gpon_interface'])
+    interface_mode_result = olt.set_interface_mode(*olt_params['gpon_interface'])
     assert 'config-if' in interface_mode_result
     current_mode = olt.get_config_mode()
     current_mode_interface = olt.get_interface_mode_interface()
     assert current_mode == OltConfigMode.INTERFACE
-    assert current_mode_interface == olt_params['gpon_interface']
+    assert current_mode_interface == tuple(olt_params['gpon_interface'])
     olt.disconnect()
 
 

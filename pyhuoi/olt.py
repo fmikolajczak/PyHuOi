@@ -119,15 +119,16 @@ class Olt:
             self.config_mode = OltConfigMode.CONFIG
             return self.set_config_mode(mode)
 
-    def set_interface_mode(self, interface: str):
+    #def set_interface_mode(self, interface: str):
+    def set_interface_mode(self, frame: int, board: int):
         if self.get_config_mode() is not OltConfigMode.CONFIG:
             self.set_config_mode(OltConfigMode.CONFIG)
 
         conn = self.get_connection()
-        expected_prompt = rf'\(config-if-{interface.replace(" ","-")}\)#'
-        conn.send_command(f'interface {interface}', expect_string=expected_prompt)
+        expected_prompt = rf'\(config-if-gpon-{frame}/{board}\)#'
+        conn.send_command(f'interface gpon {frame}/{board}', expect_string=expected_prompt)
         self.config_mode = OltConfigMode.INTERFACE
-        self.interface_mode_interface = interface
+        self.interface_mode_interface = (frame, board)
         return conn.find_prompt()
 
     def get_interface_mode_interface(self):
@@ -136,3 +137,39 @@ class Olt:
     def disconnect(self) -> None:
         if self.connection:
             self.connection.disconnect()
+
+
+#     def onu_add(self, onu: Onu):
+#         """Vectra-lab-ma5600(config-if-gpon-0/0)#ont add 1 sn-auth 4800000000000000 omci desc "TEST FABIAN" ont-lineprofile-name VECTRA ont-srvprofile-name VECTRA ont-type auto ?
+# ---------------------------------------------
+#   Command of gpon-0/0 Mode:
+# ---------------------------------------------
+# <cr>                  Please press ENTER to execute command
+#
+# { <cr>|ont-type<K> }:fig-if-gpon-0/0)#ont add 1 sn-auth 4800000000000000 omci desc "TEST FABI  " ont-lineprofile-name VECTRA ont-srvprofile-name VECTRA ont-type
+#   Command:
+#           ont add 1 sn-auth 4800000000000000 omci desc "TEST FABI" ont-lineprofile-name VECTRA ont-srvprofile-name VECTRA
+#   Number of ONTs that can be added: 1, success: 1
+#   PortID :1, ONTID :0
+#
+# Vectra-lab-ma5600(config-if-gpon-0/0)#
+# """
+#         conn = self.get_connection()
+#         self.set_interface_mode()
+#
+#
+#     def add_service_port(self, service_port: ServicePort):
+#         """service-port 28 vlan 1554 gpon 0/0/0 ont 3 gemport 1 multi-service user-vlan
+# 301 tag-transform translate-and-add inner-vlan 301 inner-priority 0"""
+#
+#         """service-port 29 vlan 501 gpon 0/0/0 ont 3 gemport 2 multi-service user-vlan 500 tag-transform translate"""
+#
+#         """service-port 51 vlan 1399 gpon 0/0/0 ont 1 gemport 1 multi-service user-vlan
+# 1399 tag-transform translate inbound traffic-table index 20 outbound
+# traffic-table index 20"""
+#
+#     def add_btv_user(self, btv_user: BtvUser):
+#         """igmp user add 0 service-port 59 no-auth max-program 64"""
+#         """igmp user add 2 service-port 59 no-auth quickleave immediate max-program 10
+# igmp-version v2
+# igmp multicast-vlan member service-port 59"""
