@@ -1,6 +1,7 @@
-import dataclasses
+from dataclasses import dataclass
 
-@dataclasses
+
+@dataclass
 class Onu:
     sn: str = None
     board: int = None
@@ -11,7 +12,7 @@ class Onu:
     lineprofile_id: int = None
     lineprofile_name: str = None
     srvprofile_id: int = None
-    lineprofile_id: int = None
+    srvprofile_name: str = None
 
     desc: str = None
 

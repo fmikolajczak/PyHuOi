@@ -1,7 +1,7 @@
 import json
 import string
 from os import path
-
+from pyhuoi.onu import Onu
 from pyhuoi.olt import Olt, OltConfigMode
 import pytest
 
@@ -204,6 +204,34 @@ def test_interface_mode(olt_name, olt_params):
     assert current_mode == OltConfigMode.INTERFACE
     assert current_mode_interface == tuple(olt_params['gpon_interface'])
     olt.disconnect()
+
+
+@pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters(True).items())
+def test_onu_add(olt_name, olt_params):
+    olt = Olt(ip=olt_params['ip'],
+              username=olt_params['username'],
+              password=olt_params['password'],
+              session_log='test_onu_add.log')
+    olt.get_connection()
+    onu = Onu(sn='4800000000073357',
+              frame=olt_params['write_gpon_port'][0],
+              board=olt_params['write_gpon_port'][1],
+              port=olt_params['write_gpon_port'][2],
+              lineprofile_name=olt_params['write_lineprofile_name'],
+              srvprofile_name=olt_params['write_srvprofile_name'],
+              desc='testowy_PyHuOi')
+
+    result = olt.onu_add(onu)
+    print(f'result:\n{result}\n')
+    assert result is not None
+    assert onu.onuid is not None
+
+
+def test_onu_add_no_port():
+    olt = Olt()
+    onu = Onu(sn='4800000000073357', frame='0')
+    with pytest.raises(ValueError):
+        olt.onu_add(onu)
 
 
 @pytest.mark.xfail

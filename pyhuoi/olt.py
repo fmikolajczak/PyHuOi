@@ -1,6 +1,7 @@
 from netmiko import ConnectHandler
 import re
 from enum import Enum
+from pyhuoi.onu import Onu
 
 
 class OltConfigMode(Enum):
@@ -119,7 +120,6 @@ class Olt:
             self.config_mode = OltConfigMode.CONFIG
             return self.set_config_mode(mode)
 
-    #def set_interface_mode(self, interface: str):
     def set_interface_mode(self, frame: int, board: int):
         if self.get_config_mode() is not OltConfigMode.CONFIG:
             self.set_config_mode(OltConfigMode.CONFIG)
@@ -138,26 +138,20 @@ class Olt:
         if self.connection:
             self.connection.disconnect()
 
+    def onu_add(self, onu: Onu):
+        if onu.frame is None or onu. board is None or onu.port is None:
+            raise TypeError('frame, board, port attributes of Onu must be set')
 
-#     def onu_add(self, onu: Onu):
-#         """Vectra-lab-ma5600(config-if-gpon-0/0)#ont add 1 sn-auth 4800000000000000 omci desc "TEST FABIAN" ont-lineprofile-name VECTRA ont-srvprofile-name VECTRA ont-type auto ?
-# ---------------------------------------------
-#   Command of gpon-0/0 Mode:
-# ---------------------------------------------
-# <cr>                  Please press ENTER to execute command
-#
-# { <cr>|ont-type<K> }:fig-if-gpon-0/0)#ont add 1 sn-auth 4800000000000000 omci desc "TEST FABI  " ont-lineprofile-name VECTRA ont-srvprofile-name VECTRA ont-type
-#   Command:
-#           ont add 1 sn-auth 4800000000000000 omci desc "TEST FABI" ont-lineprofile-name VECTRA ont-srvprofile-name VECTRA
-#   Number of ONTs that can be added: 1, success: 1
-#   PortID :1, ONTID :0
-#
-# Vectra-lab-ma5600(config-if-gpon-0/0)#
-# """
-#         conn = self.get_connection()
-#         self.set_interface_mode()
-#
-#
+        cmd = f'ont add {onu.port} sn-auth {onu.sn} omci desc "{onu.desc}" ont-lineprofile-name "{onu.lineprofile_name}" ont-srvprofile-name "{onu.srvprofile_name}"'
+        conn = self.get_connection()
+        self.set_interface_mode(onu.frame, onu.board)
+        output = conn.send_command(cmd)
+        if 'Number of ONTs that can be added: 1, success: 1' in output:
+            if find := re.findall('ONTID :([0-9]+)', output):
+                onu.onuid = find[0][0]
+        return output
+
+
 #     def add_service_port(self, service_port: ServicePort):
 #         """service-port 28 vlan 1554 gpon 0/0/0 ont 3 gemport 1 multi-service user-vlan
 # 301 tag-transform translate-and-add inner-vlan 301 inner-priority 0"""

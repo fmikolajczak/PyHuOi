@@ -5,7 +5,8 @@
     "password":"pass",
     "write":"1",
     "gpon_interface": ["0", "12"],
-    "onu_list_port": ["0", "12", "0"]
+    "onu_list_port": ["0", "12", "0"],
+    "write_gpon_port": ["0", "12", "1"]
   },
     "olt2": {
     "ip":"10.2.3.4",
