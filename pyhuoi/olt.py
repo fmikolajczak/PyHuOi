@@ -1,4 +1,4 @@
-from netmiko import ConnectHandler
+from netmiko import ConnectHandler, ReadTimeout
 import re
 from enum import Enum
 from pyhuoi.onu import Onu
@@ -139,16 +139,32 @@ class Olt:
             self.connection.disconnect()
 
     def onu_add(self, onu: Onu):
+        """Adds onu on given frame/board/port. Sets onuid of Onu object after successfully added.
+
+        :returns: Error message or None if run successfully
+        """
         if onu.frame is None or onu. board is None or onu.port is None:
             raise TypeError('frame, board, port attributes of Onu must be set')
+        if onu.srvprofile_name is None and onu.srvprofile_id is None:
+            raise TypeError('Either onu.srvprofile_name or _id must be set.')
+        if onu.lineprofile_name is None and onu.lineprofile_id is None:
+            raise TypeError('Either onu.lineprofile_name or _id must be set.')
 
-        cmd = f'ont add {onu.port} sn-auth {onu.sn} omci desc "{onu.desc}" ont-lineprofile-name "{onu.lineprofile_name}" ont-srvprofile-name "{onu.srvprofile_name}"'
+        cmd = f'ont add {onu.port} sn-auth {onu.sn} omci desc "{onu.desc}" ont-lineprofile-name' \
+              f' "{onu.lineprofile_name}" ont-srvprofile-name "{onu.srvprofile_name}"'
         conn = self.get_connection()
-        self.set_interface_mode(onu.frame, onu.board)
-        output = conn.send_command(cmd)
+        try:
+            self.set_interface_mode(onu.frame, onu.board)
+        except ReadTimeout:
+            return "ReadTimeout while edit gpon interface. Maybe this interface does not exist?"
+        try:
+            output = conn.send_command(cmd)
+        except ReadTimeout as e:
+            return str(e)
         if 'Number of ONTs that can be added: 1, success: 1' in output:
             if find := re.findall('ONTID :([0-9]+)', output):
                 onu.onuid = find[0][0]
+                return None
         return output
 
 

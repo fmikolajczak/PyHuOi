@@ -223,14 +223,88 @@ def test_onu_add(olt_name, olt_params):
 
     result = olt.onu_add(onu)
     print(f'result:\n{result}\n')
-    assert result is not None
+    assert result is None
     assert onu.onuid is not None
+
+@pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters(True).items())
+def test_onu_add_nonexistent_gpon_port(olt_name, olt_params):
+    olt = Olt(ip=olt_params['ip'],
+              username=olt_params['username'],
+              password=olt_params['password'],
+              session_log='test_onu_add.log')
+    olt.get_connection()
+    onu = Onu(sn='4800000000073357',
+              frame=olt_params['write_gpon_port'][0],
+              board=olt_params['write_gpon_port'][1],
+              port=int(olt_params['write_gpon_port'][2])+16,
+              lineprofile_name=olt_params['write_lineprofile_name'],
+              srvprofile_name=olt_params['write_srvprofile_name'],
+              desc='testowy_PyHuOi')
+
+    result = olt.onu_add(onu)
+    print(f'result:\n{result}\n')
+    assert result is not None
+    assert onu.onuid is None
+
+
+@pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters(True).items())
+def test_onu_add_nonexistent_gpon_board(olt_name, olt_params):
+    olt = Olt(ip=olt_params['ip'],
+              username=olt_params['username'],
+              password=olt_params['password'],
+              session_log='test_onu_add.log')
+    olt.get_connection()
+    onu = Onu(sn='4800000000073357',
+              frame=olt_params['write_gpon_port'][0],
+              board=int(olt_params['write_gpon_port'][1]) + 16,
+              port=int(olt_params['write_gpon_port'][2]),
+              lineprofile_name=olt_params['write_lineprofile_name'],
+              srvprofile_name=olt_params['write_srvprofile_name'],
+              desc='testowy_PyHuOi')
+
+    result = olt.onu_add(onu)
+    print(f'result:\n{result}\n')
+    assert result is not None
+    assert onu.onuid is None
 
 
 def test_onu_add_no_port():
     olt = Olt()
-    onu = Onu(sn='4800000000073357', frame='0')
-    with pytest.raises(ValueError):
+    onu = Onu(sn='4800000000073357', frame='0', board='0',
+              srvprofile_id=0, lineprofile_id=0)
+    with pytest.raises(TypeError):
+        olt.onu_add(onu)
+
+
+def test_onu_add_no_frame():
+    olt = Olt()
+    onu = Onu(sn='4800000000073357', port='0', board='0',
+              srvprofile_id=0, lineprofile_id=0)
+    with pytest.raises(TypeError):
+        olt.onu_add(onu)
+
+
+def test_onu_add_no_board():
+    olt = Olt()
+    onu = Onu(sn='4800000000073357', port='0', frame='0',
+              srvprofile_id=0, lineprofile_id=0)
+    with pytest.raises(TypeError):
+        olt.onu_add(onu)
+
+
+def test_onu_add_no_srvprofile():
+    olt = Olt()
+    onu = Onu(sn='4800000000073357', port='0', frame='0', board=0,
+              lineprofile_id=0)
+    with pytest.raises(TypeError):
+        olt.onu_add(onu)
+
+
+def test_onu_add_no_lineprofile():
+    olt = Olt()
+    onu = Onu(sn='4800000000073357', port='0', frame='0', board=0,
+              srvprofile_name='test')
+    with pytest.raises(TypeError):
         olt.onu_add(onu)
 
 
