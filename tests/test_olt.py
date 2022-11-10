@@ -1,7 +1,7 @@
 import json
 import string
 from os import path
-from pyhuoi.onu import Onu
+from pyhuoi.onu import Onu, ServicePort, BtvUser
 from pyhuoi.olt import Olt, OltConfigMode
 import pytest
 
@@ -219,12 +219,13 @@ def test_onu_add(olt_name, olt_params):
               port=olt_params['write_gpon_port'][2],
               lineprofile_name=olt_params['write_lineprofile_name'],
               srvprofile_name=olt_params['write_srvprofile_name'],
-              desc='testowy_PyHuOi')
+              desc='test_PyHuOi')
 
     result = olt.onu_add(onu)
     print(f'result:\n{result}\n')
     assert result is None
     assert onu.onuid is not None
+
 
 @pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters(True).items())
 def test_onu_add_nonexistent_gpon_port(olt_name, olt_params):
@@ -239,7 +240,7 @@ def test_onu_add_nonexistent_gpon_port(olt_name, olt_params):
               port=int(olt_params['write_gpon_port'][2])+16,
               lineprofile_name=olt_params['write_lineprofile_name'],
               srvprofile_name=olt_params['write_srvprofile_name'],
-              desc='testowy_PyHuOi')
+              desc='test_PyHuOi')
 
     result = olt.onu_add(onu)
     print(f'result:\n{result}\n')
@@ -260,7 +261,7 @@ def test_onu_add_nonexistent_gpon_board(olt_name, olt_params):
               port=int(olt_params['write_gpon_port'][2]),
               lineprofile_name=olt_params['write_lineprofile_name'],
               srvprofile_name=olt_params['write_srvprofile_name'],
-              desc='testowy_PyHuOi')
+              desc='test_PyHuOi')
 
     result = olt.onu_add(onu)
     print(f'result:\n{result}\n')
@@ -307,6 +308,59 @@ def test_onu_add_no_lineprofile():
     with pytest.raises(TypeError):
         olt.onu_add(onu)
 
+
+def test_add_service_port_no_params():
+    olt = Olt()
+    onu = Onu()
+    service_port = ServicePort()
+
+    with pytest.raises(TypeError):
+        olt.service_port_add(onu, service_port)
+
+
+@pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters(True).items())
+def test_service_port_add(olt_name, olt_params):
+    olt = Olt(ip=olt_params['ip'],
+              username=olt_params['username'],
+              password=olt_params['password'],
+              session_log='test_service_port_add.log')
+    olt.get_connection()
+    onu = Onu(sn='4800000000073357',
+              frame=olt_params['write_gpon_port'][0],
+              board=int(olt_params['write_gpon_port'][1]),
+              port=int(olt_params['write_gpon_port'][2]),
+              onuid=int(olt_params['write_gpon_port'][3]),
+              lineprofile_name=olt_params['write_lineprofile_name'],
+              srvprofile_name=olt_params['write_srvprofile_name'],
+              desc='test_PyHuOi')
+
+    for sp_conf in olt_params['service_ports']:
+        service_port = ServicePort(vlan=sp_conf[0], gemport=sp_conf[1],
+                                   outbound_traffic_table_name=sp_conf[2],
+                                   inbound_traffic_table_name=sp_conf[3])
+        result = olt.service_port_add(onu, service_port)
+        assert result is None
+
+
+@pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters(True).items())
+def test_service_btv_user_add(olt_name, olt_params):
+    olt = Olt(ip=olt_params['ip'],
+              username=olt_params['username'],
+              password=olt_params['password'],
+              session_log='test_service_port_add.log')
+    olt.get_connection()
+    onu = Onu(sn='4800000000073357',
+              frame=olt_params['write_gpon_port'][0],
+              board=int(olt_params['write_gpon_port'][1]),
+              port=int(olt_params['write_gpon_port'][2]),
+              onuid=int(olt_params['write_gpon_port'][3]),
+              lineprofile_name=olt_params['write_lineprofile_name'],
+              srvprofile_name=olt_params['write_srvprofile_name'],
+              desc='test_PyHuOi')
+
+    for sp_conf in olt_params['service_ports']:
+        if int(sp_conf[0]) == int(olt_params['btv_user_vlan']):
+            olt.btv_user_add
 
 @pytest.mark.xfail
 @pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters().items())

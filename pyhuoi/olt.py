@@ -1,7 +1,7 @@
 from netmiko import ConnectHandler, ReadTimeout
 import re
 from enum import Enum
-from pyhuoi.onu import Onu
+from pyhuoi.onu import Onu, ServicePort, BtvUser
 
 
 class OltConfigMode(Enum):
@@ -168,18 +168,61 @@ class Olt:
         return output
 
 
-#     def add_service_port(self, service_port: ServicePort):
-#         """service-port 28 vlan 1554 gpon 0/0/0 ont 3 gemport 1 multi-service user-vlan
-# 301 tag-transform translate-and-add inner-vlan 301 inner-priority 0"""
-#
-#         """service-port 29 vlan 501 gpon 0/0/0 ont 3 gemport 2 multi-service user-vlan 500 tag-transform translate"""
-#
-#         """service-port 51 vlan 1399 gpon 0/0/0 ont 1 gemport 1 multi-service user-vlan
-# 1399 tag-transform translate inbound traffic-table index 20 outbound
-# traffic-table index 20"""
-#
-#     def add_btv_user(self, btv_user: BtvUser):
-#         """igmp user add 0 service-port 59 no-auth max-program 64"""
-#         """igmp user add 2 service-port 59 no-auth quickleave immediate max-program 10
-# igmp-version v2
-# igmp multicast-vlan member service-port 59"""
+    def service_port_add(self, onu: Onu, service_port: ServicePort):
+        """service-port 28 vlan 1554 gpon 0/0/0 ont 3 gemport 1 multi-service user-vlan
+301 tag-transform translate-and-add inner-vlan 301 inner-priority 0"""
+
+        """service-port 29 vlan 501 gpon 0/0/0 ont 3 gemport 2 multi-service user-vlan 500 tag-transform translate"""
+
+        """service-port 51 vlan 1399 gpon 0/0/0 ont 1 gemport 1 multi-service user-vlan
+1399 tag-transform translate inbound traffic-table index 20 outbound
+traffic-table index 20"""
+        # must have gpon interface, and onu_id, vlan, gemport +
+        # optionally user-vlan or/and inner-vlan
+        if onu.frame is None or onu.board is None or onu.port is None or onu.onuid is None:
+            raise TypeError('frame, board, port and onuid must be set')
+        if service_port.vlan is None or service_port.gemport is None:
+            raise TypeError('service-port vlan and gemport must be set')
+        if service_port.user_vlan is None:
+            service_port.user_vlan = service_port.vlan
+        if service_port.inbound_traffic_table_id is not None and service_port.inbound_traffic_table_name is not None:
+            raise TypeError('inbound traffic table id and name cant be set at the same time')
+        if service_port.outbound_traffic_table_id is not None and service_port.outbound_traffic_table_name is not None:
+            raise TypeError('outbound traffic table id and name cant be set at the same time')
+        cmd = f'service-port vlan {service_port.vlan} gpon {onu.frame}/{onu.board}/{onu.port} ' \
+              f'ont {onu.onuid} gemport {service_port.gemport} multi-service user-vlan {service_port.user_vlan}'
+        if service_port.inner_vlan is None:
+            cmd += f' tag-transform translate'
+        else:
+            cmd += f' tag-transform translate-and-add inner-vlan {service_port.inner_vlan}'
+        if service_port.inbound_traffic_table_id is not None:
+            cmd += f' inbound traffic-table id {service_port.inbound_traffic_table_id}'
+        if service_port.inbound_traffic_table_name is not None:
+            cmd += f' inbound traffic-table name {service_port.inbound_traffic_table_name}'
+        if service_port.outbound_traffic_table_id is not None:
+            cmd += f' outbound traffic-table id {service_port.outbound_traffic_table_id}'
+        if service_port.outbound_traffic_table_name is not None:
+            cmd += f' outbound traffic-table name {service_port.outbound_traffic_table_name}'
+
+        self.set_config_mode(OltConfigMode.CONFIG)
+        conn = self.get_connection()
+        result = conn.send_command(cmd)
+        if 'Failure' in result:
+            return result
+
+
+    def add_btv_user(self, btv_user: BtvUser):
+        # go to btv config mode
+        # (config)# btv
+        # (config-btv)#
+        # execute sth like this:
+        # igmp user add 0 service-port 59 no-auth max-program 64
+        # or
+        # igmp user add 2 service-port 59 no-auth quickleave immediate max-program 10
+        # next go to btv /multicast-vlan config mode
+        # (config-btv)# multicast-vlan 2099
+        # (config-mvlan2099) #
+        # and run:
+        # (config-mvlan2099)# igmp multicast-vlan member service-port 59
+        return
+
