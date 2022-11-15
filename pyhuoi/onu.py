@@ -1,10 +1,12 @@
 from dataclasses import dataclass
 
+
 @dataclass
 class BtvUser:
     service_port: int = None
     vlan: int = None
     attrib: str = None
+
 
 @dataclass
 class ServicePort:

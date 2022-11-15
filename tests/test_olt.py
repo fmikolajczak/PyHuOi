@@ -360,9 +360,42 @@ def test_service_btv_user_add(olt_name, olt_params):
 
     for sp_conf in olt_params['service_ports']:
         if int(sp_conf[0]) == int(olt_params['btv_user_vlan']):
-            olt.btv_user_add
+            olt.btv_user_add()
 
 @pytest.mark.xfail
 @pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters().items())
 def test_login_after_login(olt_name, olt_params):
     return None
+
+@pytest.mark.xfail
+@pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters(True).items())
+def test_service_get_service_ports(olt_name, olt_params):
+    return None
+
+@pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters(True).items())
+def test_get_onu_by_sn(olt_name, olt_params):
+    olt = Olt(ip=olt_params['ip'],
+              username=olt_params['username'],
+              password=olt_params['password'],
+              session_log='test_service_port_add.log')
+    olt.get_connection()
+    onusn = '4800000000073357'
+    onu = olt.get_onu_by_sn(onusn)
+    assert onu.frame is not None
+    assert onu.board is not None
+    assert onu.port is not None
+    assert onu.onuid is not None
+
+
+@pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters(True).items())
+def test_get_onu_by_sn_no_onu(olt_name, olt_params):
+    olt = Olt(ip=olt_params['ip'],
+              username=olt_params['username'],
+              password=olt_params['password'],
+              session_log='test_service_port_add.log')
+    olt.get_connection()
+    onusn = '0800000000073357'
+    onu = olt.get_onu_by_sn(onusn)
+    assert onu is None
+
+

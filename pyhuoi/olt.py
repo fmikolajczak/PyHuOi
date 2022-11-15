@@ -61,15 +61,14 @@ class Olt:
         return version_dict
 
     def get_onu_list(self, frame: int = None, board: int = None, port: int = None):
-
         if port is not None and (frame is None or board is None) or \
                 board is not None and frame is None:
             raise ValueError('Please pass frame with board or/and port')
 
         cmd = f'display ont info {frame or "0"} {board or ""} {port or ""} all'
         cmd = re.sub(' +', ' ', cmd)
-        #ont_info_pattern = r'([0-9]+)\/ ([0-9]+)\/([0-9]+)\s+([0-9]+)  ([A-F0-9]+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)'
-        ont_info_pattern = r'([0-9]+)\/\s*([0-9]+)\/([0-9]+)\s+([0-9]+)  ([A-F0-9]+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)'
+        #ont_info_list_pattern = r'([0-9]+)\/ ([0-9]+)\/([0-9]+)\s+([0-9]+)  ([A-F0-9]+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)'
+        ont_info_list_pattern = r'([0-9]+)\/\s*([0-9]+)\/([0-9]+)\s+([0-9]+)  ([A-F0-9]+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)'
         self.set_config_mode(OltConfigMode.ENABLE)
         conn = self.get_connection()
         try:
@@ -78,7 +77,7 @@ class Olt:
             print(f'Exception: {e} on \nolt: {self}')
             return None
 
-        olt_list_match = re.findall(ont_info_pattern, output)
+        olt_list_match = re.findall(ont_info_list_pattern, output)
         return {onusn: {'frame': int(frame), 'board': int(board), 'port': int(port), 'onuid': int(onuid), 'control': control,
                         'run': run, 'config': config, 'match': match, 'protect': protect}
                 for frame, board, port, onuid, onusn, control, run, config, match, protect in olt_list_match}
@@ -179,6 +178,7 @@ class Olt:
 traffic-table index 20"""
         # must have gpon interface, and onu_id, vlan, gemport +
         # optionally user-vlan or/and inner-vlan
+        # optionally traffic-table + in/out + name/id
         if onu.frame is None or onu.board is None or onu.port is None or onu.onuid is None:
             raise TypeError('frame, board, port and onuid must be set')
         if service_port.vlan is None or service_port.gemport is None:
@@ -211,7 +211,7 @@ traffic-table index 20"""
             return result
 
 
-    def add_btv_user(self, btv_user: BtvUser):
+    def btv_user_add(self, btv_user: BtvUser):
         # go to btv config mode
         # (config)# btv
         # (config-btv)#
@@ -225,4 +225,40 @@ traffic-table index 20"""
         # and run:
         # (config-mvlan2099)# igmp multicast-vlan member service-port 59
         return
+
+
+    def get_service_ports(self, onu: Onu):
+        cmd = f'display service-port {onu.frame}/{onu.board}/{onu.port} ont {onu.onuid}'
+        self.set_config_mode(OltConfigMode.ENABLE)
+        conn = self.get_connection()
+        output = conn.send_command(cmd)
+        # id, vlan, vattrib, frame, board, port, onuid, gemport, user-vlan, traffix-rx-id, traffic-tx-id
+        display_service_port_pattern = r'\s+([0-9]+)\s+([0-9]+)\s+(\S+)\s+gpon\s+([0-9]+)\/([0-9]+)\s+\/([0-9]+)\s+' \
+                                       r'([0-9]+)\s+([0-9]+)\s+vlan\s+([0-9]+)\s+([-0-9]+)\s+([-0-9]+)\s+\S+'
+        sp_list = re.findall(display_service_port_pattern, output)
+        service_port_list = []
+        for sp in sp_list:
+            service_port = ServicePort(id=sp[0],
+                                       vlan=sp[1],
+                                       gemport=sp[7],
+                                       user_vlan=sp[8],
+                                       inbound_traffic_table_id=sp[9],
+                                       outbound_traffic_table_id=sp[10])
+            service_port_list.append(service_port)
+        return service_port_list
+
+
+    def get_onu_by_sn(self, sn: str) -> Onu:
+        """query olt for onu parameters by given sn"""
+        conn = self.get_connection()
+        self.set_config_mode(OltConfigMode.ENABLE)
+        display_ont_info_pattern = r'F\/S\/P\s+:\s([0-9]+)\/([0-9]+)\/([0-9]+)\s+ONT-ID\s+:\s([0-9]+)'
+        output = conn.send_command(f'display ont info by-sn {sn}')
+        if find := re.findall(display_ont_info_pattern, output):
+            onu = Onu(frame=find[0][0],
+                      board=find[0][1],
+                      port=find[0][2],
+                      onuid=find[0][3])
+            return onu
+        return None
 
