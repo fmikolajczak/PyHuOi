@@ -237,7 +237,7 @@ def test_onu_add_nonexistent_gpon_port(olt_name, olt_params):
     onu = Onu(sn='4800000000073357',
               frame=olt_params['write_gpon_port'][0],
               board=olt_params['write_gpon_port'][1],
-              port=int(olt_params['write_gpon_port'][2])+16,
+              port=int(olt_params['write_gpon_port'][2]) + 16,
               lineprofile_name=olt_params['write_lineprofile_name'],
               srvprofile_name=olt_params['write_srvprofile_name'],
               desc='test_PyHuOi')
@@ -362,15 +362,50 @@ def test_service_btv_user_add(olt_name, olt_params):
         if int(sp_conf[0]) == int(olt_params['btv_user_vlan']):
             olt.btv_user_add()
 
+
 @pytest.mark.xfail
 @pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters().items())
 def test_login_after_login(olt_name, olt_params):
     return None
 
-@pytest.mark.xfail
+
 @pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters(True).items())
 def test_service_get_service_ports(olt_name, olt_params):
-    return None
+    olt = Olt(ip=olt_params['ip'],
+              username=olt_params['username'],
+              password=olt_params['password'],
+              session_log='test_service_get_service_ports.log')
+    olt.get_connection()
+    onu = Onu(frame=olt_params['write_gpon_port'][0],
+              board=olt_params['write_gpon_port'][1],
+              port=olt_params['write_gpon_port'][2],
+              onuid=olt_params['write_gpon_port'][3],
+              )
+    service_ports = olt.get_service_ports(onu)
+    assert len(service_ports) > 2
+    assert service_ports[0].id is not None
+    assert service_ports[0].vlan is not None
+    assert service_ports[0].gemport is not None
+    assert service_ports[0].user_vlan is not None
+    assert service_ports[0].inbound_traffic_table_id is not None
+    assert service_ports[0].outbound_traffic_table_id is not None
+
+
+@pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters(True).items())
+def test_service_get_service_ports_no_onu(olt_name, olt_params):
+    olt = Olt(ip=olt_params['ip'],
+              username=olt_params['username'],
+              password=olt_params['password'],
+              session_log='test_service_get_service_ports.log')
+    olt.get_connection()
+    onu = Onu(frame=olt_params['write_gpon_port'][0],
+              board=olt_params['write_gpon_port'][1],
+              port=olt_params['write_gpon_port'][2],
+              onuid=99
+              )
+    service_ports = olt.get_service_ports(onu)
+    assert len(service_ports) == 0
+
 
 @pytest.mark.parametrize('olt_name, olt_params', read_olt_parameters(True).items())
 def test_get_onu_by_sn(olt_name, olt_params):
@@ -397,5 +432,3 @@ def test_get_onu_by_sn_no_onu(olt_name, olt_params):
     onusn = '0800000000073357'
     onu = olt.get_onu_by_sn(onusn)
     assert onu is None
-
-

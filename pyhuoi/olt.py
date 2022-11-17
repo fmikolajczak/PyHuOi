@@ -67,7 +67,7 @@ class Olt:
 
         cmd = f'display ont info {frame or "0"} {board or ""} {port or ""} all'
         cmd = re.sub(' +', ' ', cmd)
-        #ont_info_list_pattern = r'([0-9]+)\/ ([0-9]+)\/([0-9]+)\s+([0-9]+)  ([A-F0-9]+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)'
+        # ont_info_list_pattern = r'([0-9]+)\/ ([0-9]+)\/([0-9]+)\s+([0-9]+)  ([A-F0-9]+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)'
         ont_info_list_pattern = r'([0-9]+)\/\s*([0-9]+)\/([0-9]+)\s+([0-9]+)  ([A-F0-9]+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)'
         self.set_config_mode(OltConfigMode.ENABLE)
         conn = self.get_connection()
@@ -78,7 +78,8 @@ class Olt:
             return None
 
         olt_list_match = re.findall(ont_info_list_pattern, output)
-        return {onusn: {'frame': int(frame), 'board': int(board), 'port': int(port), 'onuid': int(onuid), 'control': control,
+        return {onusn: {'frame': int(frame), 'board': int(board), 'port': int(port), 'onuid': int(onuid),
+                        'control': control,
                         'run': run, 'config': config, 'match': match, 'protect': protect}
                 for frame, board, port, onuid, onusn, control, run, config, match, protect in olt_list_match}
 
@@ -142,7 +143,7 @@ class Olt:
 
         :returns: Error message or None if run successfully
         """
-        if onu.frame is None or onu. board is None or onu.port is None:
+        if onu.frame is None or onu.board is None or onu.port is None:
             raise TypeError('frame, board, port attributes of Onu must be set')
         if onu.srvprofile_name is None and onu.srvprofile_id is None:
             raise TypeError('Either onu.srvprofile_name or _id must be set.')
@@ -165,7 +166,6 @@ class Olt:
                 onu.onuid = find[0][0]
                 return None
         return output
-
 
     def service_port_add(self, onu: Onu, service_port: ServicePort):
         """service-port 28 vlan 1554 gpon 0/0/0 ont 3 gemport 1 multi-service user-vlan
@@ -210,7 +210,6 @@ traffic-table index 20"""
         if 'Failure' in result:
             return result
 
-
     def btv_user_add(self, btv_user: BtvUser):
         # go to btv config mode
         # (config)# btv
@@ -226,9 +225,8 @@ traffic-table index 20"""
         # (config-mvlan2099)# igmp multicast-vlan member service-port 59
         return
 
-
     def get_service_ports(self, onu: Onu):
-        cmd = f'display service-port {onu.frame}/{onu.board}/{onu.port} ont {onu.onuid}'
+        cmd = f'display service-port port {onu.frame}/{onu.board}/{onu.port} ont {onu.onuid}'
         self.set_config_mode(OltConfigMode.ENABLE)
         conn = self.get_connection()
         output = conn.send_command(cmd)
@@ -247,7 +245,6 @@ traffic-table index 20"""
             service_port_list.append(service_port)
         return service_port_list
 
-
     def get_onu_by_sn(self, sn: str) -> Onu:
         """query olt for onu parameters by given sn"""
         conn = self.get_connection()
@@ -261,4 +258,3 @@ traffic-table index 20"""
                       onuid=find[0][3])
             return onu
         return None
-
